@@ -1,0 +1,118 @@
+# Virtual environments
+.venv/
+.venv311/
+venv/
+env/
+ENV/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data directories (but keep .gitkeep files)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/models/*
+!data/models/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Hugging Face cache
+.huggingface/
+
+# Model artifacts
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+models/
+!models/.gitkeep
+
+# Allow the saved production model to be tracked
+!data/models/wine_quality_regressor.joblib
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual envs
+.venv/
+.venv311/
+
+# Local notebooks outputs
+notebooks/.ipynb_checkpoints/
+
+# Large local artifacts (keep notebooks/data/* only tracked if needed)
+notebooks/data/
+!notebooks/data/processed/
+
+# Local analysis docs (do not track)
+ANALISE_COMPLETA_DO_PROJETO.md
+PLANO_ACAO_IMEDIATO.md
+
+# OS files
+.DS_Store
