@@ -1,16 +1,48 @@
 {
-  "type": "FINE_TUNED",
   "symbol": "NVDA",
-  "trained_at": "2025-12-02T19:35:47.373854",
-  "start_date": "2020-01-01",
-  "end_date": "2025-12-02",
-  "metrics": {
-    "rmse": 53.331171614292856,
-    "mae": 45.05784852354677,
-    "mape": 28.185020112469605,
-    "r2": -2.886399579625837,
-    "directional_accuracy": 50.526315789473685,
-    "test_samples": 286
+  "trained_at": "2025-12-02T23:56:17.119948",
+  "model_type": "ImprovedLSTM",
+  "architecture": {
+    "sequence_length": 60,
+    "hidden_size": 64,
+    "num_layers": 3,
+    "dropout": 0.3,
+    "bidirectional": true
   },
-  "base_model": "lstm_model_BASE.pth"
+  "training": {
+    "epochs_requested": 80,
+    "epochs_trained": 40,
+    "early_stopped": true,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "patience": 12
+  },
+  "metrics": {
+    "mse": 1395.1828350615729,
+    "rmse": 37.35214632469696,
+    "mae": 34.975770674080685,
+    "mape": 22.769120330294957,
+    "r2": -0.919062851549133,
+    "directional_accuracy": 48.44290657439446,
+    "mean_percent_error": 22.769120330294957,
+    "test_samples": 290,
+    "predictions_sample": [
+      94.36669158935547,
+      94.78315734863281,
+      95.85774993896484,
+      97.52373504638672,
+      98.7867202758789
+    ],
+    "actuals_sample": [
+      124.88418579101562,
+      127.68338775634764,
+      132.85189819335938,
+      132.61196899414062,
+      134.7713623046875
+    ],
+    "final_train_loss": 0.00012417713531799246,
+    "best_val_loss": 0.0005963668039839831,
+    "epochs_trained": 40,
+    "early_stopped": true
+  }
 }

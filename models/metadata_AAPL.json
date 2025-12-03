@@ -1,22 +1,48 @@
 {
   "symbol": "AAPL",
-  "trained_at": "2025-12-02T19:19:42.393944",
-  "sequence_length": 60,
-  "epochs": 50,
-  "batch_size": 32,
-  "learning_rate": 0.001,
-  "hidden_size": 50,
-  "num_layers": 2,
-  "dropout": 0.2,
-  "metrics": {
-    "mse": 54.99027104928138,
-    "rmse": 7.415542532362779,
-    "mae": 5.886578113049061,
-    "mape": 2.800838313811231,
-    "r2": 0.8888370382188046,
-    "directional_accuracy": 50.877192982456144,
-    "test_samples": 286
+  "trained_at": "2025-12-02T23:52:25.301738",
+  "model_type": "ImprovedLSTM",
+  "architecture": {
+    "sequence_length": 60,
+    "hidden_size": 64,
+    "num_layers": 3,
+    "dropout": 0.3,
+    "bidirectional": true
   },
-  "model_path": "/Users/henriquebap/Pessoal/PosTech/previsao_acoes/models/lstm_model_AAPL.pth",
-  "scaler_path": "/Users/henriquebap/Pessoal/PosTech/previsao_acoes/models/scaler_AAPL.pkl"
+  "training": {
+    "epochs_requested": 100,
+    "epochs_trained": 30,
+    "early_stopped": true,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "patience": 15
+  },
+  "metrics": {
+    "mse": 1479.0309129276507,
+    "rmse": 38.45817095140707,
+    "mae": 37.48600221831223,
+    "mape": 16.199193952984803,
+    "r2": -2.046563499962585,
+    "directional_accuracy": 55.017301038062286,
+    "mean_percent_error": 16.199193952984803,
+    "test_samples": 290,
+    "predictions_sample": [
+      189.53677368164062,
+      189.06326293945312,
+      187.83880615234375,
+      187.9644317626953,
+      188.68121337890625
+    ],
+    "actuals_sample": [
+      225.53073120117188,
+      220.4493408203125,
+      224.50650024414062,
+      228.25537109375,
+      227.7581787109375
+    ],
+    "final_train_loss": 0.002042465939370612,
+    "best_val_loss": 0.0015550695068668574,
+    "epochs_trained": 30,
+    "early_stopped": true
+  }
 }
