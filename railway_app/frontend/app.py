@@ -12,8 +12,11 @@ from components.charts import create_candlestick_chart, create_comparison_chart
 from components.sidebar import render_sidebar
 from components.predictions import render_prediction_card
 
-# Configuração
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+# Configuração - Garante que URL tem schema https://
+_api_url = os.getenv("API_URL", "http://localhost:8000")
+if _api_url and not _api_url.startswith(("http://", "https://")):
+    _api_url = f"https://{_api_url}"
+API_URL = _api_url.rstrip("/")
 
 # Config da página
 st.set_page_config(

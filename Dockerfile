@@ -1,51 +1,41 @@
-# Multi-stage Dockerfile for Stock Prediction API
+# ==============================================
+# Stock Predictor - Dockerfile Principal (Backend)
+# Tech Challenge Fase 4 - FIAP Pos-Tech ML Engineering
+# ==============================================
+FROM python:3.10-slim
 
-# Stage 1: Base image with Python and dependencies
-FROM python:3.10-slim as base
-
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Instalar dependencias do sistema
 RUN apt-get update && apt-get install -y \
-    build-essential \
+    gcc \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
+# Copiar requirements e instalar
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copiar codigo fonte
+COPY src/ ./src/
+COPY config/ ./config/
+COPY railway_app/backend/ ./railway_app/backend/
 
-# Stage 2: Production image
-FROM python:3.10-slim
+# Criar diretorio de modelos
+RUN mkdir -p models
 
-# Set working directory
-WORKDIR /app
-
-# Copy Python packages from base stage
-COPY --from=base /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
-COPY --from=base /usr/local/bin /usr/local/bin
-
-# Create necessary directories
-RUN mkdir -p /app/data/raw /app/data/processed /app/models /app/logs
-
-# Copy application code
-COPY . .
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
+# Definir PYTHONPATH
 ENV PYTHONPATH=/app
 
-# Expose port
+# Diretorio de trabalho
+WORKDIR /app/railway_app/backend
+
+# Porta
 EXPOSE 8000
 
-# Health check
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application
-CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+# Comando
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

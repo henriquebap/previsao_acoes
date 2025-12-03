@@ -1,17 +1,28 @@
 """
-Stock Service - Serviço de dados do Yahoo Finance
+Stock Service - Wrapper para reutilizar src/data/data_loader
+Principio DRY: Importa codigo existente ao inves de duplicar
 """
-import yfinance as yf
-import pandas as pd
-from datetime import datetime, timedelta
+import sys
+from pathlib import Path
 from typing import Optional, Dict
+from datetime import datetime, timedelta
+import pandas as pd
 import time
+
+# Adicionar raiz do projeto ao path para importar src/
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.data.data_loader import StockDataLoader
 
 
 class StockService:
-    """Serviço para obter dados de ações."""
+    """
+    Servico para obter dados de acoes.
+    Reutiliza StockDataLoader de src/data/
+    """
     
-    # Cache de dados (em produção usar Redis)
+    # Cache de dados (em producao usar Redis)
     _cache: Dict[str, dict] = {}
     _cache_ttl = 300  # 5 minutos
     
@@ -39,7 +50,7 @@ class StockService:
         "PFE": "Pfizer Inc.",
         "PETR4.SA": "Petrobras",
         "VALE3.SA": "Vale S.A.",
-        "ITUB4.SA": "Itaú Unibanco",
+        "ITUB4.SA": "Itau Unibanco",
         "BBDC4.SA": "Bradesco",
         "ABEV3.SA": "Ambev S.A.",
         "WEGE3.SA": "WEG S.A.",
@@ -49,7 +60,8 @@ class StockService:
     }
     
     def __init__(self):
-        pass
+        # Reutilizar StockDataLoader de src/
+        self.loader = StockDataLoader()
     
     def _get_cache_key(self, symbol: str, days: int) -> str:
         return f"{symbol}_{days}"
@@ -62,11 +74,11 @@ class StockService:
     
     def get_stock_data(self, symbol: str, days: int = 365) -> Optional[pd.DataFrame]:
         """
-        Obtém dados históricos de uma ação.
+        Obtem dados historicos de uma acao usando src/data/data_loader.
         
         Args:
-            symbol: Ticker da ação (ex: AAPL, PETR4.SA)
-            days: Número de dias de histórico
+            symbol: Ticker da acao (ex: AAPL, PETR4.SA)
+            days: Numero de dias de historico
         
         Returns:
             DataFrame com dados ou None se falhar
@@ -82,35 +94,20 @@ class StockService:
         start = end - timedelta(days=days + 30)  # Extra para garantir
         
         try:
-            # Usar yfinance.download (mais estável que Ticker.history)
-            df = yf.download(
+            # Usar StockDataLoader de src/
+            df = self.loader.load_stock_data(
                 symbol,
-                start=start.strftime('%Y-%m-%d'),
-                end=end.strftime('%Y-%m-%d'),
-                progress=False,
-                auto_adjust=True
+                start.strftime('%Y-%m-%d'),
+                end.strftime('%Y-%m-%d')
             )
             
             if df.empty:
                 return None
             
-            # Tratar MultiIndex
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.get_level_values(0)
+            # Validar dados
+            self.loader.validate_data(df)
             
-            df = df.reset_index()
-            df.columns = df.columns.str.lower()
-            
-            # Renomear coluna de data
-            for col in ['date', 'Date', 'datetime', 'Datetime']:
-                if col.lower() in [c.lower() for c in df.columns]:
-                    df = df.rename(columns={col: 'timestamp', col.lower(): 'timestamp'})
-                    break
-            
-            if 'timestamp' not in df.columns and 'index' in df.columns:
-                df = df.rename(columns={'index': 'timestamp'})
-            
-            # Limitar ao número de dias solicitado
+            # Limitar ao numero de dias solicitado
             df = df.tail(days)
             
             # Cachear
@@ -126,29 +123,23 @@ class StockService:
             return None
     
     def get_company_name(self, symbol: str) -> str:
-        """Obtém nome da empresa pelo ticker."""
+        """Obtem nome da empresa pelo ticker."""
         symbol = symbol.upper()
         
         if symbol in self.COMPANY_NAMES:
             return self.COMPANY_NAMES[symbol]
         
-        # Tentar obter do yfinance
-        try:
-            ticker = yf.Ticker(symbol)
-            info = ticker.info
-            return info.get('longName', info.get('shortName', symbol))
-        except:
-            return symbol
+        return symbol
     
     def get_current_price(self, symbol: str) -> Optional[float]:
-        """Obtém preço atual."""
+        """Obtem preco atual."""
         df = self.get_stock_data(symbol, days=5)
         if df is not None and len(df) > 0:
             return float(df['close'].iloc[-1])
         return None
     
     def get_price_change(self, symbol: str) -> Optional[dict]:
-        """Obtém variação de preço."""
+        """Obtem variacao de preco."""
         df = self.get_stock_data(symbol, days=30)
         if df is None or len(df) < 2:
             return None
@@ -173,4 +164,3 @@ class StockService:
                 del self._cache[key]
         else:
             self._cache.clear()
-
