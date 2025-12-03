@@ -1,6 +1,6 @@
 {
   "symbol": "AAPL",
-  "trained_at": "2025-12-02T23:52:25.301738",
+  "trained_at": "2025-12-02T23:59:52.388043",
   "model_type": "ImprovedLSTM",
   "architecture": {
     "sequence_length": 60,
@@ -10,39 +10,39 @@
     "bidirectional": true
   },
   "training": {
-    "epochs_requested": 100,
-    "epochs_trained": 30,
+    "epochs_requested": 80,
+    "epochs_trained": 17,
     "early_stopped": true,
     "batch_size": 32,
     "learning_rate": 0.001,
-    "patience": 15
+    "patience": 10
   },
   "metrics": {
-    "mse": 1479.0309129276507,
-    "rmse": 38.45817095140707,
-    "mae": 37.48600221831223,
-    "mape": 16.199193952984803,
-    "r2": -2.046563499962585,
-    "directional_accuracy": 55.017301038062286,
-    "mean_percent_error": 16.199193952984803,
-    "test_samples": 290,
+    "mse": 679.3695143881862,
+    "rmse": 26.06471780756865,
+    "mae": 20.032882690429688,
+    "mape": 8.28401848594669,
+    "r2": 0.03639022182355145,
+    "directional_accuracy": 52.27272727272727,
+    "mean_percent_error": 8.28401848594669,
+    "test_samples": 177,
     "predictions_sample": [
-      189.53677368164062,
-      189.06326293945312,
-      187.83880615234375,
-      187.9644317626953,
-      188.68121337890625
+      187.17091369628906,
+      187.24583435058594,
+      187.91714477539062,
+      188.74961853027344,
+      189.6041259765625
     ],
     "actuals_sample": [
-      225.53073120117188,
-      220.4493408203125,
-      224.50650024414062,
-      228.25537109375,
-      227.7581787109375
+      213.37037658691406,
+      217.5261688232422,
+      219.977783203125,
+      222.98748779296875,
+      220.77503967285156
     ],
-    "final_train_loss": 0.002042465939370612,
-    "best_val_loss": 0.0015550695068668574,
-    "epochs_trained": 30,
+    "final_train_loss": 0.0021249092085501896,
+    "best_val_loss": 0.001271494576940313,
+    "epochs_trained": 17,
     "early_stopped": true
   }
 }
