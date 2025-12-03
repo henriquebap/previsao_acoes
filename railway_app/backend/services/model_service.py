@@ -1,33 +1,25 @@
 """
-Model Service - Wrapper para reutilizar src/models e src/training
-Principio DRY: Importa codigo existente ao inves de duplicar
+Model Service - Gerenciamento de modelos LSTM
+Deploy auto-contido para Railway
 """
-import sys
 from pathlib import Path
 from typing import Dict, Optional, List
 import pandas as pd
 import numpy as np
 
-# Adicionar raiz do projeto ao path para importar src/
-PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from src.models.lstm_model import LSTMPredictor
-from src.data.preprocessor import StockDataPreprocessor
-from config.settings import MODELS_DIR
+# Importar de core/ (copia local para deploy)
+from core.lstm_model import LSTMPredictor
+from core.preprocessor import StockDataPreprocessor
 
 # HuggingFace Hub para baixar modelos
 from huggingface_hub import hf_hub_download
 
 
 class ModelService:
-    """
-    Servico de gerenciamento de modelos LSTM.
-    Reutiliza codigo de src/models/ e src/data/
-    """
+    """Servico de gerenciamento de modelos LSTM."""
     
     HUB_REPO = "henriquebap/stock-predictor-lstm"
-    LOCAL_CACHE = MODELS_DIR
+    LOCAL_CACHE = Path("models")
     
     def __init__(self):
         self.model_cache: Dict[str, dict] = {}
@@ -70,7 +62,7 @@ class ModelService:
                     print(f"Erro ao carregar modelo: {e}")
                     return None
         
-        # Usar classes de src/ para carregar
+        # Carregar modelo e preprocessor
         try:
             model = LSTMPredictor.load(model_path)
             preprocessor = StockDataPreprocessor.load(scaler_path)
@@ -96,7 +88,7 @@ class ModelService:
         return self.model_cache.get(symbol)
     
     def predict(self, symbol: str, df: pd.DataFrame) -> dict:
-        """Faz previsao para um simbolo usando src/models."""
+        """Faz previsao para um simbolo."""
         # Tentar modelo especifico, depois BASE
         model_data = self.get_model(symbol)
         
@@ -118,15 +110,11 @@ class ModelService:
         preprocessor: StockDataPreprocessor = model_data['preprocessor']
         source = model_data['source']
         
-        # Usar preprocessor de src/ para preparar dados
+        # Fazer previsao
         try:
             X = preprocessor.transform_for_prediction(df)
-            
-            # Fazer previsao
             predictions = model.predict(X)
             pred_scaled = predictions[0]
-            
-            # Inverter escala
             predicted_price = preprocessor.inverse_transform_target(pred_scaled)
             
             model_type = f"LSTM ({source.capitalize()})"
@@ -143,24 +131,21 @@ class ModelService:
             }
         except Exception as e:
             print(f"Erro na previsao: {e}")
-            # Fallback
             current = float(df['close'].iloc[-1])
             return {
                 'predicted_price': current,
-                'model_type': f'Fallback (Erro: {str(e)[:50]})'
+                'model_type': f'Fallback (Erro)'
             }
     
     def list_available_models(self) -> List[str]:
         """Lista modelos disponiveis."""
         models = ["BASE"]
         
-        # Verificar locais
         for f in self.LOCAL_CACHE.glob("lstm_model_*.pth"):
             name = f.stem.replace("lstm_model_", "")
             if name not in models:
                 models.append(name)
         
-        # Adicionar conhecidos do Hub
         hub_models = ["AAPL", "GOOGL", "NVDA"]
         for m in hub_models:
             if m not in models:

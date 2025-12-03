@@ -1,5 +1,5 @@
 # Backend FastAPI Dockerfile
-# Reutiliza codigo de src/ (principio DRY)
+# Contexto: railway_app/backend/
 FROM python:3.10-slim
 
 WORKDIR /app
@@ -11,24 +11,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements e instalar
-COPY railway_app/backend/requirements.txt ./requirements.txt
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar codigo fonte (src/ para reutilizacao)
-COPY src/ ./src/
-COPY config/ ./config/
-
-# Copiar backend
-COPY railway_app/backend/ ./railway_app/backend/
+# Copiar codigo do backend
+COPY . .
 
 # Criar diretorio de modelos
 RUN mkdir -p models
-
-# Definir PYTHONPATH
-ENV PYTHONPATH=/app
-
-# Diretorio de trabalho do backend
-WORKDIR /app/railway_app/backend
 
 # Porta
 EXPOSE 8000
