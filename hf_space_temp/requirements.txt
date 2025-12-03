@@ -3,7 +3,7 @@ torch
 pandas
 numpy
 scikit-learn
-yfinance==0.2.40
+yfinance>=0.2.50
 websockets
 huggingface_hub
 joblib
