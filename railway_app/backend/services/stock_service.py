@@ -1,18 +1,26 @@
 """
-Stock Service - Dados de acoes do Yahoo Finance
-Deploy auto-contido para Railway
+Stock Service - Dados de acoes com persistencia em PostgreSQL
 """
 from typing import Optional, Dict
 from datetime import datetime, timedelta
 import pandas as pd
 import time
+from loguru import logger
 
 # Importar de core/ (copia local para deploy)
 from core.data_loader import StockDataLoader
 
+# Database (opcional)
+try:
+    from database.service import get_db_service, DatabaseService
+    DB_AVAILABLE = True
+except ImportError:
+    DB_AVAILABLE = False
+    logger.warning("⚠️ Database não disponível, usando apenas cache em memória")
+
 
 class StockService:
-    """Servico para obter dados de acoes."""
+    """Servico para obter dados de acoes com persistencia."""
     
     _cache: Dict[str, dict] = {}
     _cache_ttl = 300  # 5 minutos
@@ -46,6 +54,15 @@ class StockService:
     
     def __init__(self):
         self.loader = StockDataLoader()
+        self.db: Optional[DatabaseService] = None
+        
+        if DB_AVAILABLE:
+            try:
+                self.db = get_db_service()
+                logger.info("✅ StockService conectado ao PostgreSQL")
+            except Exception as e:
+                logger.warning(f"⚠️ Falha ao conectar DB: {e}")
+                self.db = None
     
     def _get_cache_key(self, symbol: str, days: int) -> str:
         return f"{symbol}_{days}"
@@ -57,12 +74,41 @@ class StockService:
         return (time.time() - cached['timestamp']) < self._cache_ttl
     
     def get_stock_data(self, symbol: str, days: int = 365) -> Optional[pd.DataFrame]:
-        """Obtem dados historicos de uma acao."""
+        """
+        Obtem dados historicos com a seguinte prioridade:
+        1. Cache em memoria (5 min)
+        2. Banco de dados PostgreSQL
+        3. Yahoo Finance API (e salva no DB)
+        """
         symbol = symbol.upper()
         cache_key = self._get_cache_key(symbol, days)
         
+        # 1. Verificar cache em memória
         if self._is_cache_valid(cache_key):
+            logger.info(f"⚡ Cache hit para {symbol}")
             return self._cache[cache_key]['data'].copy()
+        
+        # 2. Tentar banco de dados
+        if self.db:
+            try:
+                start_date = datetime.now() - timedelta(days=days + 30)
+                df = self.db.get_stock_prices(symbol, start_date=start_date)
+                
+                if not df.empty and len(df) >= days * 0.8:  # 80% dos dados
+                    logger.info(f"🗃️ Dados carregados do PostgreSQL para {symbol}")
+                    
+                    # Atualizar cache
+                    self._cache[cache_key] = {
+                        'data': df,
+                        'timestamp': time.time()
+                    }
+                    return df.tail(days).copy()
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao buscar do DB: {e}")
+        
+        # 3. Baixar do Yahoo Finance
+        logger.info(f"🌐 Baixando dados do Yahoo Finance para {symbol}")
         
         end = datetime.now()
         start = end - timedelta(days=days + 30)
@@ -78,17 +124,26 @@ class StockService:
                 return None
             
             self.loader.validate_data(df)
-            df = df.tail(days)
             
+            # Salvar no banco de dados
+            if self.db:
+                try:
+                    self.db.save_stock_prices(symbol, df)
+                    logger.info(f"💾 Dados salvos no PostgreSQL para {symbol}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Erro ao salvar no DB: {e}")
+            
+            # Atualizar cache
+            df_limited = df.tail(days)
             self._cache[cache_key] = {
-                'data': df,
+                'data': df_limited,
                 'timestamp': time.time()
             }
             
-            return df.copy()
+            return df_limited.copy()
             
         except Exception as e:
-            print(f"Erro ao obter dados de {symbol}: {e}")
+            logger.error(f"❌ Erro ao obter dados de {symbol}: {e}")
             return None
     
     def get_company_name(self, symbol: str) -> str:
@@ -110,3 +165,23 @@ class StockService:
                 del self._cache[key]
         else:
             self._cache.clear()
+    
+    def get_data_stats(self) -> Dict:
+        """Retorna estatísticas dos dados armazenados."""
+        stats = {
+            'cache_entries': len(self._cache),
+            'db_available': self.db is not None
+        }
+        
+        if self.db:
+            try:
+                # Contar registros no DB
+                from database.models import StockPrice
+                session = self.db.get_session()
+                stats['db_records'] = session.query(StockPrice).count()
+                stats['db_symbols'] = session.query(StockPrice.symbol).distinct().count()
+                session.close()
+            except:
+                pass
+        
+        return stats

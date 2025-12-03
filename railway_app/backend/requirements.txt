@@ -20,3 +20,7 @@ loguru>=0.7.0
 # HTTP
 httpx>=0.25.0
 websockets>=11.0.0
+
+# Database
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
