@@ -210,3 +210,69 @@ class ModelService:
         else:
             self.model_cache.clear()
             logger.info("🗑️ Cache completo limpo")
+    
+    def get_model_info(self, symbol: str) -> dict:
+        """
+        Retorna informacoes detalhadas sobre o modelo em uso para um simbolo.
+        Util para verificar qual modelo esta sendo usado.
+        """
+        symbol = symbol.upper()
+        model_data = self.get_model(symbol)
+        
+        if not model_data:
+            return {
+                "symbol": symbol,
+                "status": "not_loaded",
+                "message": "Modelo não carregado ou não disponível"
+            }
+        
+        model = model_data['model']
+        source = model_data['source']
+        arch_type = model_data.get('model_type', 'unknown')
+        
+        # Extrair informacoes do modelo
+        info = {
+            "symbol": symbol,
+            "status": "loaded",
+            "source": source,
+            "architecture": arch_type,
+            "in_cache": symbol in self.model_cache,
+            "model_details": {}
+        }
+        
+        # Detalhes especificos da arquitetura
+        if hasattr(model, 'input_size'):
+            info["model_details"]["input_size"] = model.input_size
+        if hasattr(model, 'hidden_size'):
+            info["model_details"]["hidden_size"] = model.hidden_size
+        if hasattr(model, 'num_layers'):
+            info["model_details"]["num_layers"] = model.num_layers
+        if hasattr(model, 'dropout'):
+            info["model_details"]["dropout"] = model.dropout
+        if hasattr(model, 'bidirectional'):
+            info["model_details"]["bidirectional"] = model.bidirectional
+        
+        # Descricao legivel
+        if arch_type == 'improved':
+            info["description"] = f"Modelo LSTM Bidirecional com Attention, treinado especificamente para {symbol}"
+        else:
+            info["description"] = f"Modelo LSTM original para {symbol}"
+        
+        if source == 'base':
+            info["description"] = "Modelo BASE genérico (usado quando não há modelo específico)"
+        
+        logger.info(f"📋 Info do modelo {symbol}: {arch_type} from {source}")
+        
+        return info
+    
+    def get_all_loaded_models(self) -> List[dict]:
+        """Retorna informacoes de todos os modelos em cache."""
+        return [
+            {
+                "symbol": symbol,
+                "source": data.get('source'),
+                "architecture": data.get('model_type'),
+                "symbol_requested": data.get('symbol_requested')
+            }
+            for symbol, data in self.model_cache.items()
+        ]

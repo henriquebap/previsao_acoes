@@ -180,6 +180,40 @@ async def get_available_models(request: Request):
     }
 
 
+@router.get("/models/info/{symbol}")
+async def get_model_info(request: Request, symbol: str):
+    """
+    Retorna informações detalhadas sobre o modelo em uso para um símbolo.
+    
+    Útil para verificar:
+    - Qual modelo está sendo usado (específico ou BASE)
+    - Arquitetura do modelo (original ou improved)
+    - Parâmetros do modelo (hidden_size, num_layers, etc.)
+    """
+    model_service: ModelService = request.app.state.model_service
+    
+    info = model_service.get_model_info(symbol.upper())
+    
+    return info
+
+
+@router.get("/models/loaded")
+async def get_loaded_models(request: Request):
+    """
+    Lista todos os modelos atualmente carregados em cache.
+    
+    Útil para monitoramento e debug.
+    """
+    model_service: ModelService = request.app.state.model_service
+    
+    loaded = model_service.get_all_loaded_models()
+    
+    return {
+        "total_loaded": len(loaded),
+        "models": loaded
+    }
+
+
 @router.get("/performance")
 async def get_model_performance(request: Request, symbol: Optional[str] = None):
     """

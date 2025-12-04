@@ -7,16 +7,22 @@ Features:
 - Persistencia em PostgreSQL
 - Modelos LSTM do HuggingFace Hub
 - WebSocket para atualizacoes em tempo real
+- Monitoramento de performance em tempo real
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 import os
+import time
+import asyncio
+from datetime import datetime
 from loguru import logger
 
 from routes import predictions, stocks, websocket
 from services.model_service import ModelService
+from services.monitoring import get_monitoring_service
+from services.model_evaluation import get_evaluation_service
 
 # Database (opcional)
 try:
@@ -31,6 +37,11 @@ async def lifespan(app: FastAPI):
     """Lifecycle: startup e shutdown."""
     # ==================== STARTUP ====================
     logger.info("🚀 Iniciando Stock Predictor API...")
+    
+    # Inicializar Monitoring
+    monitoring = get_monitoring_service()
+    app.state.monitoring = monitoring
+    logger.info("📊 Monitoramento inicializado")
     
     # Inicializar Database
     if DB_AVAILABLE:
@@ -56,8 +67,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ Erro ao carregar modelo BASE: {e}")
     
+    # Task para coletar métricas de sistema periodicamente
+    async def collect_system_metrics():
+        while True:
+            monitoring.record_system_metrics()
+            await asyncio.sleep(30)  # A cada 30 segundos
+    
+    # Iniciar coleta em background
+    asyncio.create_task(collect_system_metrics())
+    
     logger.info("=" * 50)
     logger.info("🎯 API pronta para receber requisições!")
+    logger.info("📊 Métricas disponíveis em /api/monitoring")
     logger.info("=" * 50)
     
     yield
@@ -96,6 +117,46 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Middleware de Monitoramento
+@app.middleware("http")
+async def monitoring_middleware(request: Request, call_next):
+    """Middleware que registra métricas de cada requisição."""
+    start_time = time.time()
+    
+    # Processar requisição
+    response = await call_next(request)
+    
+    # Calcular tempo de resposta
+    response_time_ms = (time.time() - start_time) * 1000
+    
+    # Registrar métrica
+    monitoring = getattr(request.app.state, 'monitoring', None)
+    if monitoring:
+        # Extrair symbol se for endpoint de previsão
+        symbol = None
+        path = request.url.path
+        if '/predictions/' in path:
+            parts = path.split('/')
+            for i, part in enumerate(parts):
+                if part == 'predictions' and i + 1 < len(parts):
+                    symbol = parts[i + 1].upper()
+                    break
+        
+        monitoring.record_request(
+            endpoint=path,
+            method=request.method,
+            status_code=response.status_code,
+            response_time_ms=response_time_ms,
+            symbol=symbol
+        )
+    
+    # Adicionar header com tempo de resposta
+    response.headers["X-Response-Time-Ms"] = str(round(response_time_ms, 2))
+    
+    return response
+
 
 # Rotas
 app.include_router(stocks.router, prefix="/api/stocks", tags=["Stocks"])
@@ -146,6 +207,286 @@ async def get_stats():
         stats["available_models"] = app.state.model_service.list_available_models()
     
     return stats
+
+
+@app.get("/api/database/status")
+async def get_database_status():
+    """
+    Status detalhado do banco de dados.
+    
+    Retorna:
+    - Status da conexão
+    - Lista de tabelas
+    - Contagem de registros por tabela
+    """
+    db = getattr(app.state, 'db', None)
+    
+    if not db:
+        return {
+            "status": "not_configured",
+            "message": "DATABASE_URL não está configurada"
+        }
+    
+    return db.get_database_status()
+
+
+@app.post("/api/database/migrate")
+async def run_migration():
+    """
+    Força a criação/atualização das tabelas no banco.
+    
+    Útil se as tabelas não foram criadas automaticamente.
+    """
+    db = getattr(app.state, 'db', None)
+    
+    if not db:
+        return {
+            "status": "error",
+            "message": "DATABASE_URL não está configurada"
+        }
+    
+    try:
+        db.create_tables()
+        return {
+            "status": "success",
+            "message": "Tabelas criadas/atualizadas com sucesso",
+            "details": db.get_database_status()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+# ==================== MONITORING ENDPOINTS ====================
+
+@app.get("/api/monitoring", tags=["Monitoring"])
+async def get_monitoring_summary():
+    """
+    Resumo completo de métricas de monitoramento.
+    
+    Inclui:
+    - Uptime da API
+    - Total de requisições e taxa de erros
+    - Métricas por endpoint (tempo médio, min, max)
+    - Métricas de inferência do modelo
+    - Utilização de CPU e memória
+    """
+    monitoring = getattr(app.state, 'monitoring', None)
+    if not monitoring:
+        return {"error": "Monitoring not available"}
+    
+    return monitoring.get_summary()
+
+
+@app.get("/api/monitoring/requests", tags=["Monitoring"])
+async def get_recent_requests(limit: int = 50):
+    """
+    Lista requisições recentes com métricas detalhadas.
+    
+    Args:
+        limit: Número máximo de requisições a retornar (default: 50)
+    """
+    monitoring = getattr(app.state, 'monitoring', None)
+    if not monitoring:
+        return {"error": "Monitoring not available"}
+    
+    return {
+        "requests": monitoring.get_recent_requests(limit),
+        "total": len(monitoring.requests)
+    }
+
+
+@app.get("/api/monitoring/system", tags=["Monitoring"])
+async def get_system_metrics():
+    """
+    Histórico de métricas de sistema (CPU, memória).
+    
+    Coleta automática a cada 30 segundos.
+    """
+    monitoring = getattr(app.state, 'monitoring', None)
+    if not monitoring:
+        return {"error": "Monitoring not available"}
+    
+    # Coletar métrica atual
+    current = monitoring.record_system_metrics()
+    
+    return {
+        "current": {
+            "cpu_percent": current.cpu_percent if current else None,
+            "memory_percent": current.memory_percent if current else None,
+            "memory_used_mb": round(current.memory_used_mb, 2) if current else None,
+            "memory_available_mb": round(current.memory_available_mb, 2) if current else None
+        } if current else None,
+        "history": monitoring.get_system_history()
+    }
+
+
+@app.get("/api/monitoring/prometheus", tags=["Monitoring"])
+async def get_prometheus_metrics():
+    """
+    Métricas em formato Prometheus.
+    
+    Pode ser usado para integração com Grafana/Prometheus.
+    """
+    monitoring = getattr(app.state, 'monitoring', None)
+    if not monitoring:
+        return "# Monitoring not available"
+    
+    summary = monitoring.get_summary()
+    
+    lines = [
+        "# HELP api_uptime_seconds Uptime da API em segundos",
+        "# TYPE api_uptime_seconds gauge",
+        f"api_uptime_seconds {summary['uptime_seconds']}",
+        "",
+        "# HELP api_requests_total Total de requisições",
+        "# TYPE api_requests_total counter",
+        f"api_requests_total {summary['total_requests']}",
+        "",
+        "# HELP api_errors_total Total de erros",
+        "# TYPE api_errors_total counter",
+        f"api_errors_total {summary['total_errors']}",
+        "",
+        "# HELP api_predictions_total Total de previsões",
+        "# TYPE api_predictions_total counter",
+        f"api_predictions_total {summary['total_predictions']}",
+        "",
+    ]
+    
+    # Métricas por endpoint
+    lines.append("# HELP api_endpoint_requests_total Requisições por endpoint")
+    lines.append("# TYPE api_endpoint_requests_total counter")
+    for endpoint, stats in summary.get('endpoints', {}).items():
+        safe_endpoint = endpoint.replace('/', '_').replace('{', '').replace('}', '')
+        lines.append(f'api_endpoint_requests_total{{endpoint="{safe_endpoint}"}} {stats["count"]}')
+    
+    lines.append("")
+    lines.append("# HELP api_endpoint_response_time_ms Tempo médio de resposta por endpoint")
+    lines.append("# TYPE api_endpoint_response_time_ms gauge")
+    for endpoint, stats in summary.get('endpoints', {}).items():
+        safe_endpoint = endpoint.replace('/', '_').replace('{', '').replace('}', '')
+        lines.append(f'api_endpoint_response_time_ms{{endpoint="{safe_endpoint}"}} {stats["avg_time_ms"]}')
+    
+    # Sistema
+    if summary.get('system'):
+        lines.append("")
+        lines.append("# HELP system_cpu_percent Uso de CPU")
+        lines.append("# TYPE system_cpu_percent gauge")
+        lines.append(f"system_cpu_percent {summary['system']['cpu_percent']}")
+        lines.append("")
+        lines.append("# HELP system_memory_percent Uso de memória")
+        lines.append("# TYPE system_memory_percent gauge")
+        lines.append(f"system_memory_percent {summary['system']['memory_percent']}")
+    
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(content="\n".join(lines), media_type="text/plain")
+
+
+# ==================== MODEL EVALUATION ENDPOINTS ====================
+
+@app.get("/api/model/evaluation", tags=["Model Evaluation"])
+async def evaluate_model_performance(days: int = 7):
+    """
+    Avalia performance REAL do modelo em produção.
+    
+    Compara previsões passadas com os valores reais que ocorreram.
+    
+    Métricas:
+    - MAPE: Erro percentual médio das previsões
+    - Acurácia Direcional: % de vezes que acertou se sobe ou desce
+    - Erro em dólares: Diferença média entre previsto e real
+    
+    Args:
+        days: Período de avaliação em dias (default: 7)
+    """
+    db = getattr(app.state, 'db', None)
+    if not db:
+        return {"error": "Database não disponível para avaliação"}
+    
+    evaluation_service = get_evaluation_service(db)
+    return evaluation_service.evaluate_past_predictions(days=days)
+
+
+@app.get("/api/model/drift/{symbol}", tags=["Model Evaluation"])
+async def check_data_drift(symbol: str, window_days: int = 30):
+    """
+    Detecta drift nos dados de uma ação.
+    
+    Drift = mudança significativa na distribuição dos dados.
+    Quando há drift, o modelo pode precisar ser retreinado.
+    
+    Verifica:
+    - Mudança no preço médio
+    - Mudança na volatilidade
+    - Mudança no volume
+    
+    Args:
+        symbol: Ticker da ação (ex: AAPL)
+        window_days: Período histórico para comparação (default: 30)
+    """
+    db = getattr(app.state, 'db', None)
+    if not db:
+        return {"error": "Database não disponível"}
+    
+    evaluation_service = get_evaluation_service(db)
+    return evaluation_service.detect_data_drift(symbol.upper(), window_days)
+
+
+@app.get("/api/model/health", tags=["Model Evaluation"])
+async def model_health_check():
+    """
+    Health check completo do modelo em produção.
+    
+    Combina:
+    - Avaliação de performance (últimos 7 dias)
+    - Status de drift para ações populares
+    - Recomendações automáticas
+    """
+    db = getattr(app.state, 'db', None)
+    if not db:
+        return {"error": "Database não disponível"}
+    
+    evaluation_service = get_evaluation_service(db)
+    
+    # Avaliar performance
+    performance = evaluation_service.evaluate_past_predictions(days=7)
+    
+    # Verificar drift nas ações mais usadas
+    popular_symbols = ["AAPL", "NVDA", "GOOGL", "MSFT"]
+    drift_status = {}
+    
+    for symbol in popular_symbols:
+        drift = evaluation_service.detect_data_drift(symbol)
+        if drift.get("status") != "error":
+            drift_status[symbol] = {
+                "drift_detected": drift.get("drift_detected", False),
+                "price_drift": drift.get("metrics", {}).get("price_drift_percent", 0)
+            }
+    
+    # Determinar saúde geral
+    has_performance_issues = performance.get("metrics", {}).get("mape_percent", 100) > 10
+    has_drift_issues = any(d.get("drift_detected") for d in drift_status.values())
+    
+    if has_performance_issues or has_drift_issues:
+        health_status = "WARNING"
+        health_message = "Modelo precisa de atenção"
+    else:
+        health_status = "HEALTHY"
+        health_message = "Modelo funcionando normalmente"
+    
+    return {
+        "status": health_status,
+        "message": health_message,
+        "performance": performance.get("metrics") if performance.get("status") == "success" else None,
+        "quality": performance.get("quality_assessment") if performance.get("status") == "success" else None,
+        "drift_status": drift_status,
+        "recommendations": [
+            performance.get("quality_assessment", {}).get("recommendation", "Sem dados suficientes")
+        ] if performance.get("status") == "success" else ["Aguardando mais previsões para avaliar"],
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 
 if __name__ == "__main__":

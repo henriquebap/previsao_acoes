@@ -35,22 +35,28 @@ ENV/
 
 # Environment variables
 .env
+.env.local
+.env.*.local
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Data
+# Data (exceto README)
 data/raw/*.csv
 data/processed/*.csv
-*.pkl
 
-# Models
+# Models - Binarios sao gerenciados via HuggingFace Hub
 models/*.h5
 models/*.keras
 models/*.pt
 models/*.pth
+models/*.pkl
 models/*.joblib
 models/*.onnx
+
+# Mas manter arquivos de metadados e documentacao
+!models/README.md
+!models/metadata_*.json
 
 # Logs
 logs/*.log
@@ -67,3 +73,15 @@ htmlcov/
 
 # Docker
 .dockerignore
+
+# HuggingFace Hub cache
+models/hub_cache/
+
+# Railway
+railway_app/backend/models/
+railway_app/frontend/__pycache__/
+
+# Reports temporarios
+reports/*.txt
+reports/*.json
+!reports/AVALIACAO_MODELOS.md

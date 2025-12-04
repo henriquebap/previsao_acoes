@@ -40,8 +40,58 @@ class DatabaseService:
     
     def create_tables(self):
         """Cria todas as tabelas no banco."""
-        Base.metadata.create_all(self.engine)
-        logger.info("✅ Tabelas criadas/verificadas")
+        try:
+            logger.info("📝 Criando tabelas no banco de dados...")
+            Base.metadata.create_all(self.engine)
+            
+            # Verificar quais tabelas existem
+            from sqlalchemy import inspect
+            inspector = inspect(self.engine)
+            tables = inspector.get_table_names()
+            logger.info(f"✅ Tabelas no banco: {tables}")
+            
+            expected = ['stock_prices', 'predictions', 'model_metrics', 'training_logs']
+            missing = [t for t in expected if t not in tables]
+            if missing:
+                logger.warning(f"⚠️ Tabelas faltando: {missing}")
+            else:
+                logger.info("✅ Todas as tabelas criadas com sucesso!")
+                
+        except Exception as e:
+            logger.error(f"❌ Erro ao criar tabelas: {e}")
+            raise
+    
+    def get_database_status(self) -> dict:
+        """Retorna status detalhado do banco de dados."""
+        try:
+            from sqlalchemy import inspect, text
+            inspector = inspect(self.engine)
+            tables = inspector.get_table_names()
+            
+            session = self.get_session()
+            
+            # Contar registros em cada tabela
+            table_counts = {}
+            for table in tables:
+                try:
+                    count = session.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
+                    table_counts[table] = count
+                except:
+                    table_counts[table] = "error"
+            
+            session.close()
+            
+            return {
+                "status": "connected",
+                "tables": tables,
+                "record_counts": table_counts,
+                "database_url": self.database_url[:30] + "..."
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e)
+            }
     
     def get_session(self) -> Session:
         """Retorna uma nova sessão."""

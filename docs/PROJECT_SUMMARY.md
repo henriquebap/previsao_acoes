@@ -127,13 +127,15 @@ Todos os requisitos do PDF foram implementados com sucesso!
   - `scripts/setup_cron.sh` - Configuração de cron jobs
 
 ### ✅ 3. Link para API em Produção
-- **Railway**: Configuração completa
-  - `railway.json` - Configuração
-  - `DEPLOYMENT.md` - Instruções detalhadas
-  - CI/CD via GitHub Actions
-- **HuggingFace Spaces**: UI Demo
-  - `app_gradio.py` - Interface Gradio
-  - Instruções de deploy em `DEPLOYMENT.md`
+- **Railway (Ativo)**:
+  - **Frontend**: https://previsaoacoes-front-production.up.railway.app
+  - **Backend API**: https://previsaoacoes-back-production.up.railway.app
+  - **API Docs**: https://previsaoacoes-back-production.up.railway.app/docs
+  - PostgreSQL para persistência
+- **HuggingFace Model Hub**:
+  - Repositório: `henriquebap/stock-predictor-lstm`
+  - Modelos: BASE + 9 específicos (AAPL, GOOGL, MSFT, etc.)
+  - Download automático via `huggingface_hub`
 
 ## 🏗️ Arquitetura Implementada
 
@@ -238,13 +240,13 @@ railway up
 4. Deploy UI: Seguir instruções HF Spaces
 
 ### Para Melhorias Futuras
-1. Implementar Prophet e XGBoost (já estruturado)
-2. Adicionar mais fontes de dados (news, sentiment)
-3. Implementar ensemble de modelos
-4. Adicionar database (Supabase/PostgreSQL)
-5. Implementar autenticação JWT
-6. Adicionar rate limiting
-7. Implementar A/B testing de modelos
+1. ✅ Database PostgreSQL (implementado no Railway)
+2. Prever retornos % ao invés de preços absolutos
+3. Adicionar mais indicadores técnicos (RSI, MACD, Bollinger)
+4. Implementar ensemble de modelos
+5. Adicionar dados de sentimento (notícias, redes sociais)
+6. Modelo Transformer (substituir LSTM)
+7. Retraining automático com novos dados
 
 ## 📚 Estrutura de Arquivos Criada
 
