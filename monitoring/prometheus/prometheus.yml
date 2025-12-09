@@ -33,3 +33,4 @@ scrape_configs:
     metrics_path: '/metrics'
     scrape_interval: 30s
 
+

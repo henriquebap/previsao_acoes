@@ -72,7 +72,7 @@ htmlcov/
 .pytest_cache/
 
 # Docker
-.dockerignore
+# .dockerignore - DEVE ser versionado para builds consistentes
 
 # HuggingFace Hub cache
 models/hub_cache/

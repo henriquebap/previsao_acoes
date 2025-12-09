@@ -230,3 +230,4 @@ def get_prometheus_metrics() -> PrometheusMetrics:
         _prometheus_metrics = PrometheusMetrics()
     return _prometheus_metrics
 
+
