@@ -5,10 +5,12 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+import time
 from loguru import logger
 
 from services.stock_service import StockService
 from services.model_service import ModelService
+from services.monitoring import get_monitoring_service
 
 
 router = APIRouter()
@@ -53,12 +55,30 @@ async def get_prediction(request: Request, symbol: str):
         
         current_price = float(df['close'].iloc[-1])
         
-        # Obter modelo e fazer previsão
+        # Obter modelo e fazer previsão (medir tempo de inferência)
         model_service: ModelService = request.app.state.model_service
+        
+        inference_start = time.time()
         prediction_result = model_service.predict(resolved_symbol, df)
+        inference_time_ms = (time.time() - inference_start) * 1000
         
         predicted_price = prediction_result['predicted_price']
         model_type = prediction_result['model_type']
+        
+        # Registrar métricas de inferência do modelo
+        try:
+            monitoring = get_monitoring_service()
+            monitoring.record_request(
+                endpoint=f"/api/predictions/{resolved_symbol}",
+                method="GET",
+                status_code=200,
+                response_time_ms=inference_time_ms,
+                model_inference_time_ms=inference_time_ms,
+                symbol=resolved_symbol
+            )
+            logger.info(f"📊 Métrica registrada: {resolved_symbol} inference={inference_time_ms:.1f}ms")
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao registrar métrica: {e}")
         
         # Calcular métricas
         change_percent = ((predicted_price - current_price) / current_price) * 100

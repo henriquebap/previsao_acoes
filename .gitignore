@@ -85,3 +85,4 @@ railway_app/frontend/__pycache__/
 reports/*.txt
 reports/*.json
 !reports/AVALIACAO_MODELOS.md
+docs/prometheus info.txt
