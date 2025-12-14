@@ -42,45 +42,60 @@ def resolve_symbol(query: str) -> str:
     return query.upper()
 
 
-def render_sidebar() -> Tuple[str, int, bool, List[str]]:
-    """Renderiza sidebar e retorna selecoes."""
+def render_sidebar() -> Tuple[str, int, bool, List[str], bool]:
+    """Renderiza sidebar e retorna selecoes + trigger de load."""
     
-    # Inicializar session_state apenas uma vez
+    # Inicializar session_state
     if 'selected_symbol' not in st.session_state:
         st.session_state['selected_symbol'] = ''
+    if 'loaded_symbol' not in st.session_state:
+        st.session_state['loaded_symbol'] = ''
     if 'search_input_field' not in st.session_state:
         st.session_state['search_input_field'] = ''
-    if 'force_update_input' not in st.session_state:
-        st.session_state['force_update_input'] = False
     
     with st.sidebar:
         st.markdown("## 🔍 Buscar Ação")
         
-        # Se forçar update (de um botão), atualizar o campo de texto
-        if st.session_state.get('force_update_input', False):
-            st.session_state['search_input_field'] = st.session_state.get('selected_symbol', '')
-            st.session_state['force_update_input'] = False
+        # Input de busca
+        col1, col2 = st.columns([3, 1])
         
-        # Input de busca - SEM value, apenas key
-        search_input = st.text_input(
-            "Ticker ou Nome",
-            placeholder="Ex: AAPL, Apple, Petrobras",
-            key="search_input_field"
-        )
+        with col1:
+            search_input = st.text_input(
+                "Ticker ou Nome",
+                placeholder="Ex: AAPL",
+                key="search_input_field",
+                label_visibility="collapsed"
+            )
         
-        # Atualizar symbol baseado no input (sem criar loop)
+        # Resolver símbolo
         if search_input:
-            resolved = resolve_symbol(search_input)
-            # Apenas atualiza se realmente mudou
-            if resolved != st.session_state.get('selected_symbol'):
-                st.session_state['selected_symbol'] = resolved
-            selected_symbol = resolved
+            selected_symbol = resolve_symbol(search_input)
         else:
             selected_symbol = st.session_state.get('selected_symbol', '')
         
-        # Mostrar selecionado
+        # Botão Carregar - TRIGGER EXPLÍCITO
+        with col2:
+            load_button = st.button(
+                "🚀",
+                key="load_button",
+                help="Carregar dados",
+                use_container_width=True,
+                disabled=not selected_symbol
+            )
+        
+        # Status da seleção
         if selected_symbol:
-            st.success(f"✅ Selecionado: **{selected_symbol}**")
+            if selected_symbol == st.session_state.get('loaded_symbol'):
+                st.info(f"📊 **{selected_symbol}** (carregado)")
+            else:
+                st.warning(f"⚠️ **{selected_symbol}** (não carregado)\n\nClique em 🚀 para carregar")
+        
+        # Atualizar estado quando carregar
+        should_load = False
+        if load_button and selected_symbol:
+            st.session_state['selected_symbol'] = selected_symbol
+            st.session_state['loaded_symbol'] = selected_symbol
+            should_load = True
         
         st.markdown("---")
         
@@ -128,10 +143,16 @@ def render_sidebar() -> Tuple[str, int, bool, List[str]]:
                 cols = st.columns(2)
                 for i, ticker in enumerate(tickers):
                     with cols[i % 2]:
-                        if st.button(ticker, key=f"btn_{ticker}", use_container_width=True):
-                            # Atualizar session_state e sinalizar update do input
+                        # Indicador se já está carregado
+                        is_loaded = ticker == st.session_state.get('loaded_symbol')
+                        button_label = f"✓ {ticker}" if is_loaded else ticker
+                        
+                        if st.button(button_label, key=f"btn_{ticker}", use_container_width=True):
+                            # Selecionar E carregar imediatamente
                             st.session_state['selected_symbol'] = ticker
-                            st.session_state['force_update_input'] = True
+                            st.session_state['loaded_symbol'] = ticker
+                            st.session_state['search_input_field'] = ticker
+                            should_load = True
                             st.rerun()
         
         st.markdown("---")
@@ -151,4 +172,4 @@ def render_sidebar() -> Tuple[str, int, bool, List[str]]:
         </div>
         """, unsafe_allow_html=True)
     
-    return selected_symbol, selected_days, compare_mode, compare_symbols
+    return selected_symbol, selected_days, compare_mode, compare_symbols, should_load
