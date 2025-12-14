@@ -572,6 +572,7 @@ def main():
                     with cols[i]:
                         if st.button(sym, key=f"pop_{sym}"):
                             st.session_state['selected_symbol'] = sym
+                            st.session_state['force_update_input'] = True
                             st.rerun()
     
     # Footer

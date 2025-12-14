@@ -45,26 +45,36 @@ def resolve_symbol(query: str) -> str:
 def render_sidebar() -> Tuple[str, int, bool, List[str]]:
     """Renderiza sidebar e retorna selecoes."""
     
-    # Inicializar session_state
+    # Inicializar session_state apenas uma vez
     if 'selected_symbol' not in st.session_state:
         st.session_state['selected_symbol'] = ''
+    if 'search_input_field' not in st.session_state:
+        st.session_state['search_input_field'] = ''
+    if 'force_update_input' not in st.session_state:
+        st.session_state['force_update_input'] = False
     
     with st.sidebar:
         st.markdown("## 🔍 Buscar Ação")
         
-        # Input de busca - valor inicial do session_state
+        # Se forçar update (de um botão), atualizar o campo de texto
+        if st.session_state.get('force_update_input', False):
+            st.session_state['search_input_field'] = st.session_state.get('selected_symbol', '')
+            st.session_state['force_update_input'] = False
+        
+        # Input de busca - SEM value, apenas key
         search_input = st.text_input(
             "Ticker ou Nome",
-            value=st.session_state.get('selected_symbol', ''),
             placeholder="Ex: AAPL, Apple, Petrobras",
             key="search_input_field"
         )
         
-        # Atualizar symbol baseado no input
+        # Atualizar symbol baseado no input (sem criar loop)
         if search_input:
-            selected_symbol = resolve_symbol(search_input)
-            if selected_symbol != st.session_state.get('selected_symbol'):
-                st.session_state['selected_symbol'] = selected_symbol
+            resolved = resolve_symbol(search_input)
+            # Apenas atualiza se realmente mudou
+            if resolved != st.session_state.get('selected_symbol'):
+                st.session_state['selected_symbol'] = resolved
+            selected_symbol = resolved
         else:
             selected_symbol = st.session_state.get('selected_symbol', '')
         
@@ -119,8 +129,9 @@ def render_sidebar() -> Tuple[str, int, bool, List[str]]:
                 for i, ticker in enumerate(tickers):
                     with cols[i % 2]:
                         if st.button(ticker, key=f"btn_{ticker}", use_container_width=True):
-                            # Atualizar session_state e forcar rerun
+                            # Atualizar session_state e sinalizar update do input
                             st.session_state['selected_symbol'] = ticker
+                            st.session_state['force_update_input'] = True
                             st.rerun()
         
         st.markdown("---")
