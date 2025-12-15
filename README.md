@@ -819,15 +819,15 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## Autores
 
-(Adicionar colegas de trabalho)
-github user:Felpz2212 - nome:Felipe Araujo De Almeida
-github user: CECH-Carlos
-nome: Carlos
+**Henrique Baptista**
+- GitHub: [@henriquebap](https://github.com/henriquebap)
+- LinkedIn: [henrique-baptista777](https://www.linkedin.com/in/henrique-baptista777/)
 
+**Felipe Araujo De Almeida**
+- GitHub: [@Felpz2212](https://github.com/Felpz2212)
 
-**Henriquebap**
-- GitHub: [@your-username](https://github.com/henriquebap)
-- LinkedIn: [your-profile](https://www.linkedin.com/in/henrique-baptista777/)
+**Carlos Eduardo Cheim**
+- GitHub: [@CECH-Carlos](https://github.com/CECH-Carlos)
 
 ## Agradecimentos
 
