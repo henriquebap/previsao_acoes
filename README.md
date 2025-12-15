@@ -7,23 +7,7 @@
 
 Um sistema completo de previsão de preços de ações usando redes neurais LSTM (Long Short-Term Memory), com API RESTful construída em FastAPI, monitoramento em tempo real e deploy automatizado.
 
-> **📚 Documentação Completa Disponível!**
-> 
-> Acesse a pasta [`docs/`](docs/) para documentação detalhada com 300+ páginas e 35+ diagramas:
-> 
-> | Documento | Descrição |
-> |-----------|-----------|
-> | ⭐ [README_COMPLETO.md](docs/README_COMPLETO.md) | Visão geral completa (~80 páginas) |
-> | 📊 [GUIA_VISUAL.md](docs/GUIA_VISUAL.md) | 35+ diagramas de fluxos |
-> | 🏗️ [ARQUITETURA_TECNICA.md](docs/ARQUITETURA_TECNICA.md) | Detalhes técnicos |
-> | 📋 [REFERENCIA_RAPIDA.md](docs/REFERENCIA_RAPIDA.md) | Cheat sheet de comandos |
-> | ⚡ [QUICKSTART.md](docs/QUICKSTART.md) | Setup em 5 minutos |
-> | 🎤 [APRESENTACAO.md](docs/APRESENTACAO.md) | Roteiro de apresentação |
-> | 🌐 [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Guias de deploy |
-> 
-> 👉 **Comece por:** [docs/LEIA_ME_PRIMEIRO.md](docs/LEIA_ME_PRIMEIRO.md)
-
-## 📋 Índice
+## Índice
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Arquitetura](#arquitetura)
@@ -37,7 +21,7 @@ Um sistema completo de previsão de preços de ações usando redes neurais LSTM
 - [Monitoramento](#monitoramento)
 - [Contribuindo](#contribuindo)
 
-## 🎯 Sobre o Projeto
+## Sobre o Projeto
 
 Este projeto foi desenvolvido como parte do **Tech Challenge Fase 4** da Pós-Tech FIAP em Machine Learning Engineering. O objetivo é criar um sistema de ponta a ponta para previsão de preços de ações utilizando:
 
@@ -57,7 +41,7 @@ O modelo é avaliado usando:
 - **R²** (Coefficient of Determination)
 - **Directional Accuracy** (acurácia da direção da mudança de preço)
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 ### Arquitetura Completa do Sistema
 
@@ -375,33 +359,33 @@ graph TB
     class PROD,STARTUP,RUNTIME,FAST1,FAST2,FAST3 flow
 ```
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 ### Core Features
 
-- ✅ **Previsão de Preços**: Previsão de preços de fechamento de ações usando LSTM
-- ✅ **Múltiplas Ações**: Suporte para previsão de múltiplas ações
-- ✅ **Previsões em Lote**: API endpoint para previsões batch
-- ✅ **Dados Históricos**: Acesso a dados históricos via API
-- ✅ **Treinamento Automático**: Pipeline completo de treinamento com validação
-- ✅ **Retreinamento**: Endpoint para retreinar modelos sob demanda
+- **Previsão de Preços**: Previsão de preços de fechamento de ações usando LSTM
+- **Múltiplas Ações**: Suporte para previsão de múltiplas ações
+- **Previsões em Lote**: API endpoint para previsões batch
+- **Dados Históricos**: Acesso a dados históricos via API
+- **Treinamento Automático**: Pipeline completo de treinamento com validação
+- **Retreinamento**: Endpoint para retreinar modelos sob demanda
 
 ### API & Monitoring
 
-- ✅ **API RESTful**: FastAPI com documentação automática (Swagger/OpenAPI)
-- ✅ **Monitoramento**: Métricas Prometheus e dashboard de monitoramento
-- ✅ **Logging Estruturado**: Logs detalhados com Loguru
-- ✅ **Health Checks**: Endpoints de saúde da aplicação
-- ✅ **CORS**: Configuração CORS para integração frontend
+- **API RESTful**: FastAPI com documentação automática (Swagger/OpenAPI)
+- **Monitoramento**: Métricas Prometheus e dashboard de monitoramento
+- **Logging Estruturado**: Logs detalhados com Loguru
+- **Health Checks**: Endpoints de saúde da aplicação
+- **CORS**: Configuração CORS para integração frontend
 
 ### DevOps
 
-- ✅ **Containerização**: Docker e Docker Compose
-- ✅ **CI/CD**: GitHub Actions
-- ✅ **Testes**: Suite de testes com pytest
-- ✅ **Agendamento**: Scripts para treinamento agendado (cron)
+- **Containerização**: Docker e Docker Compose
+- **CI/CD**: GitHub Actions
+- **Testes**: Suite de testes com pytest
+- **Agendamento**: Scripts para treinamento agendado (cron)
 
-## 🚀 Instalação
+## Instalação
 
 ### Pré-requisitos
 
@@ -446,7 +430,7 @@ docker-compose up --build
 
 A API estará disponível em `http://localhost:8000`
 
-## 📖 Uso
+## Uso
 
 ### 1. Treinar um Modelo
 
@@ -493,7 +477,7 @@ curl -X POST "http://localhost:8000/api/v1/predict/batch" \
   }'
 ```
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### Previsões
 
@@ -518,7 +502,7 @@ curl -X POST "http://localhost:8000/api/v1/predict/batch" \
 - `GET /api/v1/metrics` - Métricas da API
 - `GET /api/v1/metrics/prometheus` - Métricas em formato Prometheus
 
-## 🎓 Treinamento de Modelos
+## Treinamento de Modelos
 
 ### Pipeline de Treinamento
 
@@ -549,7 +533,7 @@ LSTM_NUM_LAYERS = 2
 LSTM_DROPOUT = 0.2
 ```
 
-## 🚢 Deploy
+## Deploy
 
 ### Railway
 
@@ -576,7 +560,7 @@ docker run -p 8000:8000 \
   stock-prediction-api
 ```
 
-## 🧪 Testes
+## Testes
 
 ```bash
 # Todos os testes
@@ -592,7 +576,7 @@ pytest tests/test_api.py -v
 pytest -m "not slow"
 ```
 
-## 📊 Monitoramento
+## Monitoramento
 
 ### Métricas Disponíveis
 
@@ -614,7 +598,7 @@ Logs estruturados são salvos em:
 - `logs/app_YYYY-MM-DD.log` - Todos os logs
 - `logs/errors_YYYY-MM-DD.log` - Apenas erros
 
-## 📁 Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 previsao_acoes/
@@ -643,7 +627,7 @@ previsao_acoes/
 └── README.md
 ```
 
-## 🤝 Contribuindo
+## Contribuindo
 
 Contribuições são bem-vindas! Por favor:
 
@@ -653,24 +637,24 @@ Contribuições são bem-vindas! Por favor:
 4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
 
-## 📝 Licença
+## Licença
 
 Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## 👨‍💻 Autor
+## Autor
 
 **Seu Nome**
 - GitHub: [@your-username](https://github.com/your-username)
 - LinkedIn: [your-profile](https://linkedin.com/in/your-profile)
 
-## 🙏 Agradecimentos
+## Agradecimentos
 
 - FIAP Pós-Tech MLET
 - Tech Challenge Fase 4
 - Comunidade Python/PyTorch
 - Colaboradores e revisores
 
-## 📚 Referências
+## Referências
 
 - [LSTM Networks](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
