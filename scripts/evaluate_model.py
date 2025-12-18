@@ -41,11 +41,11 @@ def load_model_and_preprocessor(symbol: str):
     # Tentar carregar como modelo melhorado primeiro
     try:
         model = ImprovedLSTMPredictor.load(model_path)
-        logger.info(f"✅ Carregado como ImprovedLSTMPredictor")
+        logger.info(f" Carregado como ImprovedLSTMPredictor")
     except Exception:
         # Fallback para modelo original
         model = LSTMPredictor.load(model_path)
-        logger.info(f"✅ Carregado como LSTMPredictor (original)")
+        logger.info(f" Carregado como LSTMPredictor (original)")
     
     preprocessor = StockDataPreprocessor.load(scaler_path)
     
@@ -63,7 +63,7 @@ def evaluate_model(symbol: str, test_days: int = 60) -> dict:
     Returns:
         Dict com métricas detalhadas
     """
-    logger.info(f"📊 Avaliando modelo para {symbol}")
+    logger.info(f" Avaliando modelo para {symbol}")
     
     # Carregar modelo
     model, preprocessor = load_model_and_preprocessor(symbol)
@@ -181,14 +181,14 @@ def generate_report(results: dict, output_path: Path = None):
     
     report = []
     report.append("=" * 70)
-    report.append("📊 RELATÓRIO DE AVALIAÇÃO DO MODELO LSTM")
+    report.append(" RELATÓRIO DE AVALIAÇÃO DO MODELO LSTM")
     report.append("=" * 70)
     report.append(f"Data: {results['evaluation_date'][:10]}")
     report.append(f"Símbolo: {results['symbol']}")
     report.append(f"Amostras de teste: {results['test_samples']}")
     report.append("")
     
-    report.append("📈 MÉTRICAS DE PERFORMANCE:")
+    report.append(" MÉTRICAS DE PERFORMANCE:")
     report.append("-" * 40)
     m = results['metrics']
     report.append(f"  RMSE (Root Mean Square Error): ${m['rmse']}")
@@ -199,7 +199,7 @@ def generate_report(results: dict, output_path: Path = None):
     report.append(f"  Correlação de Retornos: {m['return_correlation']}")
     report.append("")
     
-    report.append("📊 INTERPRETAÇÃO:")
+    report.append(" INTERPRETAÇÃO:")
     report.append("-" * 40)
     
     # Interpretar MAPE
@@ -225,7 +225,7 @@ def generate_report(results: dict, output_path: Path = None):
     report.append(f"  Acurácia Direcional: {dir_interpretation}")
     report.append("")
     
-    report.append("📉 DISTRIBUIÇÃO DOS ERROS:")
+    report.append(" DISTRIBUIÇÃO DOS ERROS:")
     report.append("-" * 40)
     e = results['error_distribution']
     report.append(f"  Mínimo: ${e['min']:.2f}")
@@ -237,7 +237,7 @@ def generate_report(results: dict, output_path: Path = None):
     report.append(f"  Desvio Padrão: ${e['std']:.2f}")
     report.append("")
     
-    report.append("🎯 PREVISÕES vs VALORES REAIS (últimas 10):")
+    report.append(" PREVISÕES vs VALORES REAIS (últimas 10):")
     report.append("-" * 40)
     report.append(f"{'Data':<12} {'Previsto':>10} {'Real':>10} {'Erro':>8} {'%':>6}")
     report.append("-" * 50)
@@ -266,7 +266,7 @@ def generate_report(results: dict, output_path: Path = None):
         with open(output_path.with_suffix('.json'), 'w') as f:
             json.dump(results, f, indent=2)
         
-        logger.info(f"💾 Relatório salvo em {output_path}")
+        logger.info(f" Relatório salvo em {output_path}")
     
     return report_text
 
@@ -293,9 +293,9 @@ def main():
             generate_report(results, output_path)
             
         except FileNotFoundError as e:
-            logger.error(f"❌ {e}")
+            logger.error(f" {e}")
         except Exception as e:
-            logger.error(f"❌ Erro ao avaliar {symbol}: {e}")
+            logger.error(f" Erro ao avaliar {symbol}: {e}")
 
 
 if __name__ == "__main__":

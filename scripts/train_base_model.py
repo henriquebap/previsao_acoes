@@ -74,9 +74,9 @@ def main():
         )
         
         logger.info("=" * 60)
-        logger.info("✅ TREINAMENTO CONCLUÍDO!")
+        logger.info(" TREINAMENTO CONCLUÍDO!")
         logger.info("=" * 60)
-        logger.info("📊 Métricas Finais:")
+        logger.info(" Métricas Finais:")
         logger.info(f"   RMSE: ${metrics['rmse']:.2f}")
         logger.info(f"   MAE:  ${metrics['mae']:.2f}")
         logger.info(f"   MAPE: {metrics['mape']:.2f}%")
@@ -87,7 +87,7 @@ def main():
         return 0
         
     except Exception as e:
-        logger.error(f"❌ Erro no treinamento: {e}")
+        logger.error(f" Erro no treinamento: {e}")
         return 1
 
 

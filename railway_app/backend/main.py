@@ -38,25 +38,25 @@ except ImportError:
 async def lifespan(app: FastAPI):
     """Lifecycle: startup e shutdown."""
     # ==================== STARTUP ====================
-    logger.info("🚀 Iniciando Stock Predictor API...")
+    logger.info("Iniciando Stock Predictor API...")
     
     # Inicializar Monitoring
     monitoring = get_monitoring_service()
     app.state.monitoring = monitoring
-    logger.info("📊 Monitoramento inicializado")
+    logger.info(" Monitoramento inicializado")
     
     # Inicializar Database
     if DB_AVAILABLE:
         try:
             db = get_db_service()
             app.state.db = db
-            logger.info("✅ PostgreSQL conectado e tabelas criadas")
+            logger.info(" PostgreSQL conectado e tabelas criadas")
         except Exception as e:
-            logger.warning(f"⚠️ Database não disponível: {e}")
+            logger.warning(f" Database não disponível: {e}")
             app.state.db = None
     else:
         app.state.db = None
-        logger.info("ℹ️ Rodando sem banco de dados (apenas cache)")
+        logger.info(" Rodando sem banco de dados (apenas cache)")
     
     # Inicializar Model Service
     model_service = ModelService()
@@ -65,13 +65,26 @@ async def lifespan(app: FastAPI):
     # Pre-carregar modelo BASE
     try:
         model_service.get_model("BASE")
-        logger.info("✅ Modelo BASE carregado")
+        logger.info(" Modelo BASE carregado")
     except Exception as e:
-        logger.warning(f"⚠️ Erro ao carregar modelo BASE: {e}")
+        logger.warning(f" Erro ao carregar modelo BASE: {e}")
     
     # Task para coletar métricas de sistema periodicamente
     async def collect_system_metrics():
+        # #region agent log
+        import json, time
+        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H3","location":"main.py:73","message":"collect_system_metrics INICIADO","data":{"interval_seconds":30},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
+        iteration = 0
         while True:
+            # #region agent log
+            import psutil
+            mem = psutil.virtual_memory()
+            with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H3","location":"main.py:76","message":"Coletando métricas do sistema","data":{"iteration":iteration,"memory_percent":mem.percent,"memory_used_mb":mem.used/1024/1024,"cpu_percent":psutil.cpu_percent()},"timestamp":int(time.time()*1000)})+'\n')
+            iteration += 1
+            # #endregion
             monitoring.record_system_metrics()
             await asyncio.sleep(30)  # A cada 30 segundos
     
@@ -79,14 +92,14 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(collect_system_metrics())
     
     logger.info("=" * 50)
-    logger.info("🎯 API pronta para receber requisições!")
-    logger.info("📊 Métricas disponíveis em /api/monitoring")
+    logger.info(" API pronta para receber requisições!")
+    logger.info(" Métricas disponíveis em /api/monitoring")
     logger.info("=" * 50)
     
     yield
     
     # ==================== SHUTDOWN ====================
-    logger.info("👋 Encerrando API...")
+    logger.info(" Encerrando API...")
 
 
 # Criar app
@@ -96,10 +109,10 @@ app = FastAPI(
     API de previsão de preços de ações com LSTM.
     
     ## Features
-    - 📈 Previsões de preços com modelos LSTM
-    - 📊 Dados históricos de ações (Yahoo Finance)
-    - 🗃️ Persistência em PostgreSQL
-    - 🔄 WebSocket para preços em tempo real
+    -  Previsões de preços com modelos LSTM
+    -  Dados históricos de ações (Yahoo Finance)
+    -  Persistência em PostgreSQL
+    -  WebSocket para preços em tempo real
     
     ## Modelos
     - **BASE**: Modelo genérico treinado com múltiplas ações
@@ -125,6 +138,11 @@ app.add_middleware(
 @app.middleware("http")
 async def monitoring_middleware(request: Request, call_next):
     """Middleware que registra métricas de cada requisição."""
+    # #region agent log
+    import json
+    with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+        f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H5","location":"main.py:125","message":"Request recebida","data":{"path":request.url.path,"method":request.method},"timestamp":int(time.time()*1000)})+'\n')
+    # #endregion
     start_time = time.time()
     
     # Processar requisição
@@ -201,6 +219,12 @@ async def root():
 @app.get("/health")
 async def health():
     """Health check da API."""
+    # #region agent log
+    import json, time
+    with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+        f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H5","location":"main.py:201","message":"Health check chamado","data":{},"timestamp":int(time.time()*1000)})+'\n')
+    # #endregion
+    
     db_status = "connected" if (hasattr(app.state, 'db') and app.state.db) else "not_configured"
     model_status = "loaded" if (hasattr(app.state, 'model_service') and app.state.model_service) else "not_loaded"
     

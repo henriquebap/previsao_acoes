@@ -37,17 +37,26 @@ class ModelService:
     def __init__(self):
         self.model_cache: Dict[str, dict] = {}
         self.LOCAL_CACHE.mkdir(exist_ok=True)
-        logger.info(f"🧠 ModelService inicializado | Hub: {self.HUB_REPO}")
+        logger.info(f" ModelService inicializado | Hub: {self.HUB_REPO}")
     
     def _download_from_hub(self, filename: str) -> Path:
         """Baixa arquivo do HuggingFace Hub."""
-        logger.info(f"📥 Baixando do Hub: {filename}")
+        # #region agent log
+        import json, time
+        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"model_service.py:44","message":"Download from Hub INICIADO","data":{"filename":filename,"cache_dir":str(self.LOCAL_CACHE / "hub_cache")},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
+        logger.info(f" Baixando do Hub: {filename}")
         path = Path(hf_hub_download(
             repo_id=self.HUB_REPO,
             filename=filename,
             cache_dir=str(self.LOCAL_CACHE / "hub_cache")
         ))
-        logger.info(f"✅ Download concluido: {filename}")
+        # #region agent log
+        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"model_service.py:50","message":"Download from Hub COMPLETO","data":{"filename":filename,"path":str(path)},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
+        logger.info(f" Download concluido: {filename}")
         return path
     
     def _load_model(self, symbol: str) -> Optional[dict]:
@@ -55,7 +64,7 @@ class ModelService:
         model_file = f"lstm_model_{symbol}.pth"
         scaler_file = f"scaler_{symbol}.pkl"
         
-        logger.info(f"🔍 Procurando modelo para {symbol}...")
+        logger.info(f" Procurando modelo para {symbol}...")
         
         # Tentar cache local primeiro
         local_model = self.LOCAL_CACHE / model_file
@@ -65,26 +74,26 @@ class ModelService:
             model_path = local_model
             scaler_path = local_scaler
             source = "local"
-            logger.info(f"📁 Modelo LOCAL encontrado para {symbol}")
+            logger.info(f" Modelo LOCAL encontrado para {symbol}")
         else:
             # Tentar HuggingFace Hub - modelo especifico
-            logger.info(f"🌐 Buscando modelo {symbol} no HuggingFace Hub...")
+            logger.info(f" Buscando modelo {symbol} no HuggingFace Hub...")
             try:
                 model_path = self._download_from_hub(model_file)
                 scaler_path = self._download_from_hub(scaler_file)
                 source = "hub"
-                logger.info(f"✅ Modelo para {symbol} encontrado no Hub!")
+                logger.info(f" Modelo para {symbol} encontrado no Hub!")
             except Exception as e:
                 # Fallback para modelo BASE
-                logger.warning(f"⚠️ Modelo específico para {symbol} não encontrado: {e}")
-                logger.info(f"🔄 Usando modelo BASE genérico...")
+                logger.warning(f" Modelo específico para {symbol} não encontrado: {e}")
+                logger.info(f" Usando modelo BASE genérico...")
                 try:
                     model_path = self._download_from_hub("lstm_model_BASE.pth")
                     scaler_path = self._download_from_hub("scaler_BASE.pkl")
                     source = "base"
-                    logger.info(f"✅ Modelo BASE carregado para {symbol}")
+                    logger.info(f" Modelo BASE carregado para {symbol}")
                 except Exception as e2:
-                    logger.error(f"❌ Falha ao carregar modelo BASE: {e2}")
+                    logger.error(f" Falha ao carregar modelo BASE: {e2}")
                     return None
         
         # Detectar tipo do modelo e carregar com fallback robusto
@@ -94,45 +103,45 @@ class ModelService:
         try:
             # Primeiro, detectar tipo
             detected_type = detect_model_type(model_path)
-            logger.info(f"🔎 Tipo detectado: {detected_type}")
+            logger.info(f" Tipo detectado: {detected_type}")
             
             # Tentar carregar com o tipo detectado
             if detected_type == 'improved':
                 try:
                     model = ImprovedLSTMPredictor.load(model_path)
                     model_type = 'improved'
-                    logger.info(f"✅ Carregado como ImprovedLSTMPredictor")
+                    logger.info(f" Carregado como ImprovedLSTMPredictor")
                 except Exception as e1:
-                    logger.warning(f"⚠️ Falha ao carregar como Improved: {e1}")
+                    logger.warning(f" Falha ao carregar como Improved: {e1}")
                     # Fallback para original
                     try:
                         model = LSTMPredictor.load(model_path)
                         model_type = 'original'
-                        logger.info(f"✅ Fallback: Carregado como LSTMPredictor")
+                        logger.info(f" Fallback: Carregado como LSTMPredictor")
                     except Exception as e2:
-                        logger.error(f"❌ Fallback também falhou: {e2}")
+                        logger.error(f" Fallback também falhou: {e2}")
             else:
                 try:
                     model = LSTMPredictor.load(model_path)
                     model_type = 'original'
-                    logger.info(f"✅ Carregado como LSTMPredictor")
+                    logger.info(f" Carregado como LSTMPredictor")
                 except Exception as e1:
-                    logger.warning(f"⚠️ Falha ao carregar como Original: {e1}")
+                    logger.warning(f" Falha ao carregar como Original: {e1}")
                     # Fallback para improved
                     try:
                         model = ImprovedLSTMPredictor.load(model_path)
                         model_type = 'improved'
-                        logger.info(f"✅ Fallback: Carregado como ImprovedLSTMPredictor")
+                        logger.info(f" Fallback: Carregado como ImprovedLSTMPredictor")
                     except Exception as e2:
-                        logger.error(f"❌ Fallback também falhou: {e2}")
+                        logger.error(f" Fallback também falhou: {e2}")
             
             if model is None:
-                logger.error(f"❌ Não foi possível carregar modelo para {symbol}")
+                logger.error(f" Não foi possível carregar modelo para {symbol}")
                 return None
             
             preprocessor = StockDataPreprocessor.load(scaler_path)
             
-            logger.info(f"🎯 Modelo carregado | Symbol: {symbol} | Source: {source} | Type: {model_type}")
+            logger.info(f" Modelo carregado | Symbol: {symbol} | Source: {source} | Type: {model_type}")
             
             return {
                 'model': model,
@@ -142,15 +151,21 @@ class ModelService:
                 'symbol_requested': symbol
             }
         except Exception as e:
-            logger.error(f"❌ Erro crítico ao carregar modelo: {e}")
+            logger.error(f" Erro crítico ao carregar modelo: {e}")
             return None
     
     def get_model(self, symbol: str) -> Optional[dict]:
         """Obtem modelo do cache ou carrega."""
         symbol = symbol.upper()
         
+        # #region agent log
+        import json, time
+        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"model_service.py:148","message":"get_model chamado","data":{"symbol":symbol,"in_cache":symbol in self.model_cache,"cache_size":len(self.model_cache)},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
+        
         if symbol not in self.model_cache:
-            logger.info(f"📦 Modelo {symbol} não está em cache, carregando...")
+            logger.info(f" Modelo {symbol} não está em cache, carregando...")
             model_data = self._load_model(symbol)
             if model_data:
                 self.model_cache[symbol] = model_data
@@ -161,25 +176,25 @@ class ModelService:
     
     def predict(self, symbol: str, df: pd.DataFrame) -> dict:
         """Faz previsao para um simbolo."""
-        logger.info(f"🔮 Iniciando previsão para {symbol}...")
+        logger.info(f" Iniciando previsão para {symbol}...")
         
         # Tentar modelo especifico, depois BASE
         model_data = self.get_model(symbol)
         
         if not model_data:
-            logger.warning(f"⚠️ Nenhum modelo disponível para {symbol}, tentando BASE...")
+            logger.warning(f" Nenhum modelo disponível para {symbol}, tentando BASE...")
             model_data = self.get_model("BASE")
         
         if not model_data:
             # Fallback: media movel simples
-            logger.warning(f"⚠️ Usando FALLBACK (média móvel) para {symbol}")
+            logger.warning(f" Usando FALLBACK (média móvel) para {symbol}")
             current = float(df['close'].iloc[-1])
             momentum = float((df['close'].iloc[-1] - df['close'].iloc[-5]) / df['close'].iloc[-5])
             predicted = current * (1 + momentum * 0.3)
             
             return {
                 'predicted_price': predicted,
-                'model_type': '⚠️ Fallback (Média Móvel)'
+                'model_type': ' Fallback (Média Móvel)'
             }
         
         model = model_data['model']
@@ -197,26 +212,26 @@ class ModelService:
             # Determinar nome do modelo para exibição (CORRIGIDO - sem "Fine-tuned")
             if source == "hub" or source == "local":
                 if arch_type == 'improved':
-                    model_type_display = f"🎯 LSTM Específico ({symbol})"
+                    model_type_display = f" LSTM Específico ({symbol})"
                 else:
-                    model_type_display = f"📊 LSTM ({symbol})"
+                    model_type_display = f" LSTM ({symbol})"
             elif source == "base":
-                model_type_display = "🧠 LSTM Base (genérico)"
+                model_type_display = " LSTM Base (genérico)"
             else:
                 model_type_display = f"LSTM ({source})"
             
-            logger.info(f"✅ Previsão concluída | {symbol} | ${predicted_price:.2f} | {model_type_display}")
+            logger.info(f" Previsão concluída | {symbol} | ${predicted_price:.2f} | {model_type_display}")
             
             return {
                 'predicted_price': float(predicted_price),
                 'model_type': model_type_display
             }
         except Exception as e:
-            logger.error(f"❌ Erro na previsão para {symbol}: {e}")
+            logger.error(f" Erro na previsão para {symbol}: {e}")
             current = float(df['close'].iloc[-1])
             return {
                 'predicted_price': current,
-                'model_type': f'⚠️ Erro: {str(e)[:30]}'
+                'model_type': f' Erro: {str(e)[:30]}'
             }
     
     def list_available_models(self) -> List[str]:
@@ -237,10 +252,10 @@ class ModelService:
             symbol = symbol.upper()
             if symbol in self.model_cache:
                 del self.model_cache[symbol]
-                logger.info(f"🗑️ Cache limpo para {symbol}")
+                logger.info(f" Cache limpo para {symbol}")
         else:
             self.model_cache.clear()
-            logger.info("🗑️ Cache completo limpo")
+            logger.info("Cache completo limpo")
     
     def get_model_info(self, symbol: str) -> dict:
         """
@@ -292,7 +307,7 @@ class ModelService:
         if source == 'base':
             info["description"] = "Modelo BASE genérico (usado quando não há modelo específico)"
         
-        logger.info(f"📋 Info do modelo {symbol}: {arch_type} from {source}")
+        logger.info(f" Info do modelo {symbol}: {arch_type} from {source}")
         
         return info
     

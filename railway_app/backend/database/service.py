@@ -33,8 +33,27 @@ class DatabaseService:
         if self.database_url.startswith("postgres://"):
             self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
         
-        self.engine = create_engine(self.database_url, echo=False)
+        # #region agent log
+        import json, time
+        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H2","location":"database/service.py:36","message":"Criando engine do SQLAlchemy","data":{"database_url_prefix":self.database_url[:30],"echo":False,"pool_config":"default"},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
+        
+        # IMPORTANTE: Pool de conexões otimizado para Railway (reduzir custos)
+        self.engine = create_engine(
+            self.database_url, 
+            echo=False,
+            pool_size=5,           # Máximo de conexões permanentes (padrão: 5)
+            max_overflow=10,       # Conexões extras temporárias (padrão: 10)
+            pool_recycle=3600,     # Reciclar conexões a cada 1h (importante!)
+            pool_pre_ping=True     # Testar conexão antes de usar
+        )
         self.SessionLocal = sessionmaker(bind=self.engine)
+        
+        # #region agent log
+        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H2","location":"database/service.py:39","message":"Engine criado com pool otimizado","data":{"pool_size":5,"max_overflow":10,"pool_recycle":3600,"pool_pre_ping":True},"timestamp":int(time.time()*1000)})+'\n')
+        # #endregion
         
         logger.info(f"🗃️ Database conectado: {self.database_url[:30]}...")
     
@@ -95,7 +114,19 @@ class DatabaseService:
     
     def get_session(self) -> Session:
         """Retorna uma nova sessão."""
-        return self.SessionLocal()
+        # #region agent log
+        import json, time
+        from sqlalchemy import text
+        session = self.SessionLocal()
+        try:
+            active_conns = session.execute(text("SELECT count(*) FROM pg_stat_activity WHERE state = 'active'")).scalar()
+            idle_conns = session.execute(text("SELECT count(*) FROM pg_stat_activity WHERE state = 'idle'")).scalar()
+            with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H2","location":"database/service.py:96","message":"Nova sessão DB criada","data":{"active_connections":active_conns,"idle_connections":idle_conns,"pool_size":self.engine.pool.size(),"pool_checked_in":self.engine.pool.checkedin()},"timestamp":int(time.time()*1000)})+'\n')
+        except:
+            pass
+        # #endregion
+        return session
     
     # ==================== STOCK PRICES ====================
     
