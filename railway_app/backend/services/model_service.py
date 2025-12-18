@@ -41,22 +41,13 @@ class ModelService:
     
     def _download_from_hub(self, filename: str) -> Path:
         """Baixa arquivo do HuggingFace Hub."""
-        # #region agent log
-        import json, time
-        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"model_service.py:44","message":"Download from Hub INICIADO","data":{"filename":filename,"cache_dir":str(self.LOCAL_CACHE / "hub_cache")},"timestamp":int(time.time()*1000)})+'\n')
-        # #endregion
-        logger.info(f" Baixando do Hub: {filename}")
+        logger.info(f"📥 Baixando do Hub: {filename}")
         path = Path(hf_hub_download(
             repo_id=self.HUB_REPO,
             filename=filename,
             cache_dir=str(self.LOCAL_CACHE / "hub_cache")
         ))
-        # #region agent log
-        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"model_service.py:50","message":"Download from Hub COMPLETO","data":{"filename":filename,"path":str(path)},"timestamp":int(time.time()*1000)})+'\n')
-        # #endregion
-        logger.info(f" Download concluido: {filename}")
+        logger.info(f"✅ Download concluido: {filename}")
         return path
     
     def _load_model(self, symbol: str) -> Optional[dict]:
@@ -158,19 +149,14 @@ class ModelService:
         """Obtem modelo do cache ou carrega."""
         symbol = symbol.upper()
         
-        # #region agent log
-        import json, time
-        with open('/Users/henriquebap/Pessoal/PosTech/previsao_acoes/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"model_service.py:148","message":"get_model chamado","data":{"symbol":symbol,"in_cache":symbol in self.model_cache,"cache_size":len(self.model_cache)},"timestamp":int(time.time()*1000)})+'\n')
-        # #endregion
-        
         if symbol not in self.model_cache:
-            logger.info(f" Modelo {symbol} não está em cache, carregando...")
+            logger.info(f"🔄 Modelo {symbol} não está em cache, carregando... (cache size: {len(self.model_cache)})")
             model_data = self._load_model(symbol)
             if model_data:
                 self.model_cache[symbol] = model_data
+                logger.info(f"✅ Modelo {symbol} adicionado ao cache (cache size: {len(self.model_cache)})")
         else:
-            logger.info(f"⚡ Modelo {symbol} encontrado em cache!")
+            logger.info(f"⚡ Modelo {symbol} encontrado em cache! (cache size: {len(self.model_cache)})")
         
         return self.model_cache.get(symbol)
     
